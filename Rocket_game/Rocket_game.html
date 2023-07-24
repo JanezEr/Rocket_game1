@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rocket Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-image: url("background.png");
+            background-size: cover;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const WIDTH = canvas.width;
+        const HEIGHT = canvas.height;
+
+        const rocket_img = new Image();
+        rocket_img.src = "rocket.png";
+
+        const obstacle_img = new Image();
+        obstacle_img.src = "obstacle.png";
+
+        const rocket = {
+            x: WIDTH / 2,
+            y: HEIGHT - 100,
+            width: 50,
+            height: 100,
+            speed: 5
+        };
+
+        const obstacles = [];
+        let score = 0;
+        let bestScore = localStorage.getItem("bestScore") || 0;
+
+        let isMovingLeft = false;
+        let isMovingRight = false;
+
+        function drawRocket() {
+            ctx.drawImage(rocket_img, rocket.x, rocket.y, rocket.width, rocket.height);
+        }
+
+        function drawObstacles() {
+            for (let i = 0; i < obstacles.length; i++) {
+                const obstacle = obstacles[i];
+                ctx.drawImage(obstacle_img, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+        }
+
+        function moveRocket() {
+            if (isMovingLeft && rocket.x > 0) {
+                rocket.x -= rocket.speed;
+            }
+
+            if (isMovingRight && rocket.x < WIDTH - rocket.width) {
+                rocket.x += rocket.speed;
+            }
+        }
+
+        function spawnObstacle() {
+            if (Math.random() < 0.02 + score * 0.0005) {
+                const newObstacle = {
+                    x: Math.random() * (WIDTH - 50),
+                    y: 0,
+                    width: 50,
+                    height: 50,
+                    speed: 3 + score * 0.01
+                };
+                obstacles.push(newObstacle);
+            }
+        }
+
+        function updateObstacles() {
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                obstacle.y += obstacle.speed;
+
+                if (obstacle.y > HEIGHT) {
+                    obstacles.splice(i, 1);
+                    score++;
+                }
+            }
+        }
+
+        function checkCollisions() {
+            for (let i = 0; i < obstacles.length; i++) {
+                const obstacle = obstacles[i];
+                if (rocket.x < obstacle.x + obstacle.width &&
+                    rocket.x + rocket.width > obstacle.x &&
+                    rocket.y < obstacle.y + obstacle.height &&
+                    rocket.y + rocket.height > obstacle.y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function displayScore() {
+            ctx.fillStyle = "green"; // Set the text color to green
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 20, 40);
+            ctx.fillText("Best Score: " + bestScore, 20, 70);
+        }
+
+        function displayGameOver() {
+            ctx.fillStyle = "red";
+            ctx.font = "50px Arial";
+            ctx.fillText("Game Over", WIDTH / 2 - 120, HEIGHT / 2);
+            ctx.font = "30px Arial";
+            ctx.fillText("Your Score: " + score, WIDTH / 2 - 100, HEIGHT / 2 + 40);
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem("bestScore", bestScore);
+            }
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+            moveRocket();
+            spawnObstacle();
+            updateObstacles();
+            drawRocket();
+            drawObstacles();
+            displayScore();
+
+            if (checkCollisions()) {
+                endGame();
+                return;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function endGame() {
+            // Implement your end game logic here
+            displayGameOver();
+            console.log("Game Over. Your score: " + score);
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "ArrowLeft") {
+                isMovingLeft = true;
+            } else if (event.key === "ArrowRight") {
+                isMovingRight = true;
+            }
+        });
+
+        document.addEventListener("keyup", function (event) {
+            if (event.key === "ArrowLeft") {
+                isMovingLeft = false;
+            } else if (event.key === "ArrowRight") {
+                isMovingRight = false;
+            }
+        });
+
+        gameLoop();
+    </script>
+</body>
+</html>
